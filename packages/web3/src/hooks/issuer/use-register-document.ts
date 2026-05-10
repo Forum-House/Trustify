@@ -1,6 +1,7 @@
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { contractAbis, contractAddresses } from "../../contracts";
 import { createLocalWalletClient, createPublicViemClient } from "../../client";
+import { toLifecycle, type HookLifecycleStatus } from "../shared/lifecycle";
 
 export type RegisterDocumentInput = {
   hash: `0x${string}`;
@@ -14,11 +15,11 @@ export type RegisterDocumentInput = {
 };
 
 export function useRegisterDocument() {
-  const [isLoading, setIsLoading] = useState(false);
+  const [status, setStatus] = useState<HookLifecycleStatus>("idle");
   const [error, setError] = useState<string | null>(null);
 
   const registerDocument = useCallback(async (input: RegisterDocumentInput) => {
-    setIsLoading(true);
+    setStatus("pending");
     setError(null);
     try {
       const wallet = createLocalWalletClient();
@@ -43,16 +44,17 @@ export function useRegisterDocument() {
         ],
       });
 
+      setStatus("confirming");
       const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
+      setStatus("success");
       return { txHash, receipt };
     } catch (e) {
       const message = e instanceof Error ? e.message : "Register document failed";
       setError(message);
+      setStatus("error");
       throw e;
-    } finally {
-      setIsLoading(false);
     }
   }, []);
 
-  return { registerDocument, isLoading, error };
+  return { registerDocument, ...useMemo(() => toLifecycle(status, error), [status, error]) };
 }
