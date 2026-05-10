@@ -1,0 +1,9 @@
+{
+  "network": "polygon",
+  "chainId": 137,
+  "deployedAt": "",
+  "contracts": {
+    "TrustifyAccessControl": { "address": "", "txHash": "" },
+    "TrustifyRegistry": { "address": "", "txHash": "" }
+  }
+}

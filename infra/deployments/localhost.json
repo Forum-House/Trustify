@@ -1,0 +1,15 @@
+{
+  "network": "localhost",
+  "chainId": 31337,
+  "deployedAt": "2026-05-10T14:33:53.720Z",
+  "contracts": {
+    "TrustifyAccessControl": {
+      "address": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+      "txHash": "0x1fb26b86a096fda39369855d6f0529ae05ca34a39a879ca8872ca34603bf0f0c"
+    },
+    "TrustifyRegistry": {
+      "address": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+      "txHash": "0x3dedb0a7851f2b5cc3d0beb135ff95e50fadf962f432cee17eaf42ff5d3d210d"
+    }
+  }
+}
