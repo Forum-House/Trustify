@@ -12,9 +12,11 @@
   "dependencies": {
     "@trustify/config": "workspace:*",
     "react": "^19.2.0",
-    "viem": "^2.38.6"
+    "viem": "^2.38.6",
+    "wagmi": "^2.18.1"
   },
   "devDependencies": {
+    "@types/node": "^24.9.1",
     "@types/react": "^19.2.2",
     "typescript": "^5.8.2"
   }
