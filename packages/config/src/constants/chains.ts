@@ -1,1 +1,1 @@
-export const TARGET_CHAIN_ID = 80002;
+export { CHAIN_CONFIG, DEFAULT_CHAIN, type ChainKey } from '../chains';

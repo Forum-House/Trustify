@@ -1,1 +1,4 @@
-export const CONTRACT_ADDRESSES = { accessControl: '', registry: '' };
+export const CONTRACT_NAMES = {
+  accessControl: "TrustifyAccessControl",
+  registry: "TrustifyRegistry"
+} as const;
