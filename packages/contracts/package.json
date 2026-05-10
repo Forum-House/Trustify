@@ -1,1 +1,24 @@
-{"name":"@trustify/contracts","private":true,"version":"0.1.0","scripts":{"build":"hardhat compile","test":"hardhat test"}}
+{
+  "name": "@trustify/contracts",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "build": "hardhat compile",
+    "test": "hardhat test",
+    "clean": "hardhat clean",
+    "deploy:localhost": "hardhat run scripts/deploy-all.ts --network localhost",
+    "deploy:amoy": "hardhat run scripts/deploy-all.ts --network amoy",
+    "deploy:polygon": "hardhat run scripts/deploy-all.ts --network polygon",
+    "verify:amoy": "hardhat run scripts/verify-contracts.ts --network amoy",
+    "verify:polygon": "hardhat run scripts/verify-contracts.ts --network polygon",
+    "export:abis": "hardhat run scripts/export-abis.ts --network hardhat"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "6.0.0",
+    "@openzeppelin/contracts": "^5.1.0",
+    "dotenv": "16.4.5",
+    "hardhat": "2.26.3",
+    "tsx": "4.19.2",
+    "typescript": "5.8.2"
+  }
+}

@@ -1,1 +1,1 @@
-// Placeholder script: approve issuer via CLI
+// TODO: implement issuer approval helper

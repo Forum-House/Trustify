@@ -1,1 +1,0 @@
-// Placeholder script: deploy TrustifyRegistry
