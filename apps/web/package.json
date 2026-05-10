@@ -11,6 +11,14 @@
   },
   "dependencies": {
     "@trustify/config": "workspace:*",
-    "@trustify/web3": "workspace:*"
+    "@trustify/web3": "workspace:*",
+    "next": "^15.0.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "typescript": "^5.8.2"
   }
 }
