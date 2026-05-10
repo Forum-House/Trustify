@@ -8,8 +8,9 @@ async function setup() {
   await ac.waitForDeployment();
 
   const R = await ethers.getContractFactory("TrustifyRegistry");
-  const reg = await R.deploy(await ac.getAddress());
-  await reg.waitForDeployment();
+  const deployed = await R.deploy(await ac.getAddress());
+  await deployed.waitForDeployment();
+  const reg = await ethers.getContractAt("TrustifyRegistry", await deployed.getAddress());
 
   await ac.approveIssuer(issuer.address);
   await ac.approveIssuer(other.address);
@@ -23,11 +24,17 @@ async function setup() {
 describe("TrustifyRegistry.revoke", function () {
   it("issuer can revoke own doc", async function () {
     const { issuer, reg, hash } = await setup();
-    await expect(reg.connect(issuer).revokeDocument(hash, "bad")).to.emit(reg, "DocumentRevoked");
+    await expect((reg.connect(issuer) as any).revokeDocument(hash, "bad")).to.emit(
+      reg,
+      "DocumentRevoked"
+    );
   });
 
   it("other issuer cannot revoke", async function () {
     const { other, reg, hash } = await setup();
-    await expect(reg.connect(other).revokeDocument(hash, "bad")).to.be.revertedWithCustomError(reg, "IssuerMismatch");
+    await expect((reg.connect(other) as any).revokeDocument(hash, "bad")).to.be.revertedWithCustomError(
+      reg,
+      "IssuerMismatch"
+    );
   });
 });

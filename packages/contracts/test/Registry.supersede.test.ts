@@ -8,8 +8,9 @@ async function setup() {
   await ac.waitForDeployment();
 
   const R = await ethers.getContractFactory("TrustifyRegistry");
-  const reg = await R.deploy(await ac.getAddress());
-  await reg.waitForDeployment();
+  const deployed = await R.deploy(await ac.getAddress());
+  await deployed.waitForDeployment();
+  const reg = await ethers.getContractAt("TrustifyRegistry", await deployed.getAddress());
 
   await ac.approveIssuer(issuer.address);
   const oldHash = ethers.keccak256(ethers.toUtf8Bytes("old"));
