@@ -7,6 +7,10 @@
     "dev": "pnpm --filter @trustify/web dev",
     "build": "pnpm -r build",
     "type-check": "pnpm -r type-check",
-    "lint": "pnpm -r lint"
+    "lint": "pnpm -r lint",
+    "contracts:deploy:localhost": "pnpm --filter @trustify/contracts deploy:localhost",
+    "contracts:deploy:amoy": "pnpm --filter @trustify/contracts deploy:amoy",
+    "contracts:verify:amoy": "pnpm --filter @trustify/contracts verify:amoy",
+    "contracts:export": "pnpm --filter @trustify/contracts export:abis"
   }
 }

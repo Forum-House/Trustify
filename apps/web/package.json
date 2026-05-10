@@ -8,5 +8,9 @@
     "start": "next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@trustify/config": "workspace:*",
+    "@trustify/web3": "workspace:*"
   }
 }
