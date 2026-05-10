@@ -9,6 +9,9 @@
     "deploy:localhost": "hardhat run scripts/deploy-all.ts --network localhost",
     "deploy:amoy": "hardhat run scripts/deploy-all.ts --network amoy",
     "deploy:polygon": "hardhat run scripts/deploy-all.ts --network polygon",
+    "approve:issuer:localhost": "hardhat run scripts/approve-issuer.ts --network localhost",
+    "approve:issuer:amoy": "hardhat run scripts/approve-issuer.ts --network amoy",
+    "approve:issuer:polygon": "hardhat run scripts/approve-issuer.ts --network polygon",
     "verify:amoy": "hardhat run scripts/verify-contracts.ts --network amoy",
     "verify:polygon": "hardhat run scripts/verify-contracts.ts --network polygon",
     "export:abis": "hardhat run scripts/export-abis.ts --network hardhat"
