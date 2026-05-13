@@ -1,75 +1,107 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ExternalLink, FileText, UserCheck, Trash2, RefreshCw } from "lucide-react";
+import { ExternalLink, FileText, Trash2, RefreshCw, Loader2, ArrowUpRight } from "lucide-react";
 import { getActivityEvents, type ActivityEvent } from "@trustify/web3";
+import { EXPLORER_URL } from "../../lib/constants";
+import { cn } from "@/lib/utils";
 
-const EVENT_CONFIG: Record<ActivityEvent["eventName"], { label: string; icon: typeof FileText; color: string }> = {
-  DocumentRegistered: { label: "Document Registered", icon: FileText, color: "text-sky-400" },
-  DocumentRevoked: { label: "Document Revoked", icon: Trash2, color: "text-orange-400" },
-  DocumentSuperseded: { label: "Document Superseded", icon: RefreshCw, color: "text-purple-400" },
+const EVENT_CONFIG: Record<ActivityEvent["eventName"], { label: string; icon: typeof FileText; color: string; bg: string }> = {
+  DocumentRegistered: { label: "Registered", icon: FileText, color: "text-sky-400", bg: "bg-sky-500/10" },
+  DocumentRevoked: { label: "Revoked", icon: Trash2, color: "text-rose-400", bg: "bg-rose-500/10" },
+  DocumentSuperseded: { label: "Superseded", icon: RefreshCw, color: "text-amber-400", bg: "bg-amber-500/10" },
 };
-
-const EXPLORER =
-  process.env.NEXT_PUBLIC_CHAIN_KEY === "polygon"
-    ? "https://polygonscan.com"
-    : "https://amoy.polygonscan.com";
-
-function timeAgo(blockNumber: bigint): string {
-  // Amoy averages ~2s per block — rough estimate
-  return `Block #${blockNumber.toString()}`;
-}
 
 export function ActivityFeed() {
   const [events, setEvents] = useState<ActivityEvent[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getActivityEvents(0n)
+    getActivityEvents()
       .then((e) => setEvents(e.slice().reverse())) // newest first
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
 
   return (
-    <section className="rounded-xl border border-slate-700/50 bg-slate-900/50 p-4">
-      <h2 className="text-lg font-semibold mb-3 text-slate-100">Activity Feed</h2>
+    <section className="rounded-2xl border border-slate-800 bg-slate-950/50 p-6 flex flex-col h-full shadow-xl shadow-black/20">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-sm font-bold uppercase tracking-widest text-slate-400">On-Chain Activity</h2>
+        <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
+      </div>
+
       {loading ? (
-        <div className="flex items-center gap-2 py-6 text-slate-400 text-sm">
-          <div className="h-4 w-4 animate-spin rounded-full border-2 border-sky-400 border-t-transparent" />
-          Fetching on-chain events...
+        <div className="flex-1 flex flex-col items-center justify-center gap-3 text-slate-500 py-12">
+          <Loader2 className="h-6 w-6 animate-spin text-sky-500" />
+          <p className="text-xs font-medium">Syncing with blockchain...</p>
         </div>
       ) : events.length === 0 ? (
-        <p className="py-4 text-sm text-slate-500">No on-chain activity yet.</p>
+        <div className="flex-1 flex flex-col items-center justify-center gap-2 text-slate-600 py-12 italic border border-dashed border-slate-800 rounded-xl">
+          <p className="text-sm">No recent activity found</p>
+        </div>
       ) : (
-        <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+        <div className="flex-1 space-y-4 overflow-y-auto pr-2 custom-scrollbar">
           {events.map((event, idx) => {
             const config = EVENT_CONFIG[event.eventName];
             const Icon = config.icon;
+            
             return (
               <div
                 key={`${event.txHash}-${idx}`}
-                className="flex items-center justify-between rounded-md bg-slate-800/60 px-3 py-2"
+                className="group relative flex items-start gap-4 pb-1 transition-all"
               >
-                <div className="flex items-center gap-2 min-w-0">
-                  <Icon className={`h-4 w-4 flex-shrink-0 ${config.color}`} />
-                  <span className="text-sm text-slate-200 truncate">{config.label}</span>
-                  <span className="text-xs text-slate-500 flex-shrink-0">{timeAgo(event.blockNumber)}</span>
+                {/* Timeline Line */}
+                {idx !== events.length - 1 && (
+                  <div className="absolute left-[17px] top-9 w-[2px] h-full bg-slate-800 group-hover:bg-slate-700 transition-colors" />
+                )}
+
+                {/* Icon Circle */}
+                <div className={cn(
+                  "relative z-10 flex h-9 w-9 items-center justify-center rounded-full border border-slate-800 bg-slate-900 transition-transform group-hover:scale-110 group-hover:border-slate-700",
+                  config.bg,
+                  config.color
+                )}>
+                  <Icon className="h-4 w-4" />
                 </div>
-                <a
-                  href={`${EXPLORER}/tx/${event.txHash}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="ml-2 flex-shrink-0 text-sky-400 hover:text-sky-300 transition-colors"
-                  title="View on Polygonscan"
-                >
-                  <ExternalLink className="h-3.5 w-3.5" />
-                </a>
+
+                {/* Content */}
+                <div className="flex-1 min-w-0 pt-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-semibold text-slate-100 truncate group-hover:text-white transition-colors">
+                      {config.label} <span className="text-slate-500 font-normal">Document</span>
+                    </p>
+                    <a
+                      href={`${EXPLORER_URL}/tx/${event.txHash}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="opacity-0 group-hover:opacity-100 text-sky-400 hover:text-sky-300 transition-all flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider"
+                    >
+                      View <ArrowUpRight className="h-3 w-3" />
+                    </a>
+                  </div>
+                  
+                  <div className="flex items-center gap-3 mt-1">
+                    <p className="text-[10px] font-mono text-slate-500">
+                      Block #{event.blockNumber.toString()}
+                    </p>
+                    <span className="h-1 w-1 rounded-full bg-slate-700" />
+                    <p className="text-[10px] font-mono text-slate-500 uppercase tracking-tight">
+                      {event.txHash.slice(0, 10)}...
+                    </p>
+                  </div>
+                </div>
               </div>
             );
           })}
         </div>
       )}
+      
+      {!loading && events.length > 0 && (
+        <div className="mt-6 pt-4 border-t border-slate-800 flex justify-center">
+          <p className="text-[10px] text-slate-600 italic">Showing last 5000 blocks of activity</p>
+        </div>
+      )}
     </section>
   );
 }
+

@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { IssuerProfile } from "@trustify/config";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { useAllIssuers } from "@trustify/web3";
 
 const STATUS_VARIANT: Record<string, "default" | "destructive" | "secondary" | "outline"> = {
   approved: "default",
@@ -14,7 +15,27 @@ function truncateAddress(addr: string) {
   return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
 }
 
-export function IssuersTable({ issuers = [] }: { issuers?: IssuerProfile[] }) {
+export function IssuersTable({ issuers: initialIssuers }: { issuers?: IssuerProfile[] }) {
+  const { loadIssuers } = useAllIssuers();
+  const [issuers, setIssuers] = useState<IssuerProfile[]>(initialIssuers ?? []);
+  const [loading, setLoading] = useState(!initialIssuers);
+
+  useEffect(() => {
+    if (initialIssuers) return;
+    loadIssuers()
+      .then(setIssuers)
+      .finally(() => setLoading(false));
+  }, [initialIssuers, loadIssuers]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-10 text-slate-400">
+        <div className="h-5 w-5 animate-spin rounded-full border-2 border-sky-400 border-t-transparent mr-2" />
+        Loading issuers...
+      </div>
+    );
+  }
+
   return (
     <section className="rounded-xl border border-slate-700/50 bg-slate-900/50 overflow-hidden">
       {/* Desktop table */}
