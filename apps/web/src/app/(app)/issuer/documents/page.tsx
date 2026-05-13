@@ -1,5 +1,4 @@
 import { IssuerDocumentsTable } from "../../../../components/issuer/issuer-documents-table";
-import { DocumentDetailDrawer } from "../../../../components/issuer/document-detail-drawer";
 
 export default function IssuerDocumentsPage() {
   return (
@@ -11,7 +10,6 @@ export default function IssuerDocumentsPage() {
       <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6">
         <IssuerDocumentsTable />
       </div>
-      <DocumentDetailDrawer />
     </main>
   );
 }
