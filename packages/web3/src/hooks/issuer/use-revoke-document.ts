@@ -1,16 +1,19 @@
 import { useCallback, useMemo, useState } from "react";
-import { useWriteContract } from "wagmi";
+import { useWriteContract, usePublicClient } from "wagmi";
 import { contractAbis, contractAddresses } from "../../contracts";
 import { toLifecycle, type HookLifecycleStatus } from "../shared/lifecycle";
 
 export function useRevokeDocument() {
   const mutation = useWriteContract();
+  const publicClient = usePublicClient();
   const [status, setStatus] = useState<HookLifecycleStatus>("idle");
   const [error, setError] = useState<string | null>(null);
+  const [txHash, setTxHash] = useState<`0x${string}` | null>(null);
 
   const revokeDocument = useCallback(async (hash: `0x${string}`, reason: string) => {
     setStatus("pending");
     setError(null);
+    setTxHash(null);
     try {
       const tx = await mutation.writeContractAsync({
         address: contractAddresses.registry,
@@ -18,7 +21,11 @@ export function useRevokeDocument() {
         functionName: "revokeDocument",
         args: [hash, reason],
       });
+      setTxHash(tx);
       setStatus("confirming");
+      if (publicClient) {
+        await publicClient.waitForTransactionReceipt({ hash: tx });
+      }
       setStatus("success");
       return tx;
     } catch (e) {
@@ -27,7 +34,7 @@ export function useRevokeDocument() {
       setStatus("error");
       throw e;
     }
-  }, [mutation]);
+  }, [mutation, publicClient]);
 
-  return { revokeDocument, ...useMemo(() => toLifecycle(status, error), [status, error]), ...mutation };
+  return { revokeDocument, txHash, ...useMemo(() => toLifecycle(status, error), [status, error]) };
 }

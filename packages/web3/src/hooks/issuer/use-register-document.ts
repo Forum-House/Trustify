@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
+import { useWriteContract, usePublicClient } from "wagmi";
 import { contractAbis, contractAddresses } from "../../contracts";
-import { createLocalWalletClient, createPublicViemClient } from "../../client";
 import { toLifecycle, type HookLifecycleStatus } from "../shared/lifecycle";
 
 export type RegisterDocumentInput = {
@@ -15,20 +15,18 @@ export type RegisterDocumentInput = {
 };
 
 export function useRegisterDocument() {
+  const mutation = useWriteContract();
+  const publicClient = usePublicClient();
   const [status, setStatus] = useState<HookLifecycleStatus>("idle");
   const [error, setError] = useState<string | null>(null);
+  const [txHash, setTxHash] = useState<`0x${string}` | null>(null);
 
   const registerDocument = useCallback(async (input: RegisterDocumentInput) => {
     setStatus("pending");
     setError(null);
+    setTxHash(null);
     try {
-      const wallet = createLocalWalletClient();
-      const publicClient = createPublicViemClient();
-      const [account] = await wallet.getAddresses();
-
-      const txHash = await wallet.writeContract({
-        chain: wallet.chain,
-        account,
+      const hash = await mutation.writeContractAsync({
         address: contractAddresses.registry,
         abi: contractAbis.TrustifyRegistryAbi,
         functionName: "registerDocument",
@@ -44,17 +42,20 @@ export function useRegisterDocument() {
         ],
       });
 
+      setTxHash(hash);
       setStatus("confirming");
-      const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
+      if (publicClient) {
+        await publicClient.waitForTransactionReceipt({ hash });
+      }
       setStatus("success");
-      return { txHash, receipt };
+      return { txHash: hash };
     } catch (e) {
       const message = e instanceof Error ? e.message : "Register document failed";
       setError(message);
       setStatus("error");
       throw e;
     }
-  }, []);
+  }, [mutation, publicClient]);
 
-  return { registerDocument, ...useMemo(() => toLifecycle(status, error), [status, error]) };
+  return { registerDocument, txHash, ...useMemo(() => toLifecycle(status, error), [status, error]) };
 }
