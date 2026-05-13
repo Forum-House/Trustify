@@ -10,6 +10,9 @@ export type ActivityEvent = {
 
 export async function getActivityEvents(fromBlock: bigint = 0n): Promise<ActivityEvent[]> {
   const client = createPublicViemClient();
+  const currentBlock = await client.getBlockNumber();
+  const actualFromBlock = currentBlock - 5000n > 0n ? currentBlock - 5000n : 0n;
+
   const logs = await client.getLogs({
     address: contractAddresses.registry,
     events: [
@@ -17,7 +20,7 @@ export async function getActivityEvents(fromBlock: bigint = 0n): Promise<Activit
       contractAbis.TrustifyRegistryAbi.find((item) => item.type === "event" && item.name === "DocumentRevoked")!,
       contractAbis.TrustifyRegistryAbi.find((item) => item.type === "event" && item.name === "DocumentSuperseded")!,
     ],
-    fromBlock,
+    fromBlock: actualFromBlock,
     toBlock: "latest",
   });
 
