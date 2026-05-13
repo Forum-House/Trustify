@@ -1,15 +1,24 @@
+const path = require('path');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   transpilePackages: ['@trustify/web3', '@trustify/config'],
   webpack: (config, { isServer }) => {
+    // Force single instance of shared libraries
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      'wagmi': path.resolve(__dirname, 'node_modules/wagmi'),
+      'viem': path.resolve(__dirname, 'node_modules/viem'),
+      '@tanstack/react-query': path.resolve(__dirname, 'node_modules/@tanstack/react-query'),
+      'react': path.resolve(__dirname, 'node_modules/react'),
+      'react-dom': path.resolve(__dirname, 'node_modules/react-dom'),
+    };
+
     // Suppress warnings from third-party peer dependencies
     if (!isServer) {
       config.ignoreWarnings = [
-        // MetaMask SDK peer dependency (React Native only)
         { module: /@metamask\/sdk/ },
-        // WalletConnect optional dependency
         { module: /pino-pretty/ },
-        // Viem internal dynamic requires
         { module: /ox/ },
       ];
     }

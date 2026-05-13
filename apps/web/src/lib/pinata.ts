@@ -1,23 +1,17 @@
-const PINATA_UPLOAD_URL = "https://api.pinata.cloud/pinning/pinFileToIPFS";
-
 export async function uploadFileToIpfs(file: File) {
-  const jwt = process.env.NEXT_PUBLIC_PINATA_JWT;
-  if (!jwt) throw new Error("NEXT_PUBLIC_PINATA_JWT is required for IPFS upload.");
-
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetch(PINATA_UPLOAD_URL, {
+  const response = await fetch("/api/ipfs/upload", {
     method: "POST",
-    headers: { Authorization: `Bearer ${jwt}` },
     body: formData,
   });
 
   if (!response.ok) {
-    const text = await response.text();
-    throw new Error(`Pinata upload failed: ${response.status} ${text}`);
+    const errorData = await response.json().catch(() => ({ error: response.statusText }));
+    throw new Error(errorData.error || `Upload failed: ${response.status}`);
   }
 
-  const json = (await response.json()) as { IpfsHash: string };
-  return { cid: json.IpfsHash };
+  const json = (await response.json()) as { cid: string };
+  return { cid: json.cid };
 }
