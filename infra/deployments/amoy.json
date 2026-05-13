@@ -1,9 +1,13 @@
 {
   "network": "amoy",
   "chainId": 80002,
-  "deployedAt": "",
+  "deployer": "0xf5eE552925D8b107fB0c82e69B8BBdf62F8C490e",
   "contracts": {
-    "TrustifyAccessControl": { "address": "", "txHash": "" },
-    "TrustifyRegistry": { "address": "", "txHash": "" }
-  }
+    "accessControl": "0x28D7F78beA2485003EaccA821c6fC657bd7Ad962",
+    "registry": "0xFd34812b44D8133D30a7eD2318D70f7F276F233C"
+  },
+  "transactions": {
+    "registry": "0xad1684183562f0be334efadd67fae50f9bdaa11090b0aa835ecfcc699903c9ec"
+  },
+  "timestamp": "2026-05-12T08:32:32.089Z"
 }
