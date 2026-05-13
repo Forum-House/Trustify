@@ -1,18 +1,30 @@
 "use client";
 
 import { useState } from "react";
-import { CheckCircle2, ExternalLink, Loader2, Upload, FileText, Eye, Zap } from "lucide-react";
+import { CheckCircle2, ExternalLink, Loader2, Upload, FileText, Eye, Zap, AlertCircle, ChevronRight, ChevronLeft } from "lucide-react";
 import { computeDocumentHash } from "../../hooks/use-document-hash";
 import { uploadFileToIpfs } from "../../lib/pinata";
 import { useRegisterDocument } from "@trustify/web3";
 import { EXPLORER_URL } from "../../lib/constants";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 const SECTORS = [
-  { value: 0, label: "Education" },
-  { value: 1, label: "Healthcare" },
-  { value: 2, label: "Legal" },
-  { value: 3, label: "Government" },
-  { value: 4, label: "Corporate" },
+  { value: "0", label: "Education" },
+  { value: "1", label: "Healthcare" },
+  { value: "2", label: "Legal" },
+  { value: "3", label: "Government" },
+  { value: "4", label: "Corporate" },
 ];
 
 const STEP_LABELS = ["Upload", "Metadata", "Review", "Confirm"] as const;
@@ -22,28 +34,30 @@ type Step = 0 | 1 | 2 | 3;
 
 function StepIndicator({ step }: { step: Step }) {
   return (
-    <div className="flex items-center gap-2 mb-6">
+    <div className="flex items-center justify-between mb-8 px-2">
       {STEP_LABELS.map((label, idx) => {
         const Icon = STEP_ICONS[idx];
         const isActive = idx === step;
         const isDone = idx < step;
         return (
-          <div key={label} className="flex items-center gap-1">
-            <div
-              className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-colors ${isDone
-                  ? "bg-emerald-600 text-white"
-                  : isActive
-                    ? "bg-sky-600 text-white"
-                    : "bg-slate-800 text-slate-500"
-                }`}
-            >
-              {isDone ? <CheckCircle2 className="h-4 w-4" /> : <Icon className="h-3.5 w-3.5" />}
+          <div key={label} className="flex flex-1 items-center last:flex-none">
+            <div className="flex flex-col items-center gap-2 relative">
+              <div
+                className={`flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all duration-300 ${isDone
+                    ? "bg-emerald-600 border-emerald-600 text-white"
+                    : isActive
+                      ? "bg-sky-600 border-sky-600 text-white shadow-lg shadow-sky-500/20"
+                      : "bg-slate-900 border-slate-700 text-slate-500"
+                  }`}
+              >
+                {isDone ? <CheckCircle2 className="h-5 w-5" /> : <Icon className="h-5 w-5" />}
+              </div>
+              <span className={`text-[10px] sm:text-xs font-medium absolute -bottom-6 whitespace-nowrap transition-colors ${isActive ? "text-sky-300" : isDone ? "text-emerald-400" : "text-slate-500"}`}>
+                {label}
+              </span>
             </div>
-            <span className={`text-xs hidden sm:block ${isActive ? "text-sky-300 font-medium" : isDone ? "text-emerald-400" : "text-slate-500"}`}>
-              {label}
-            </span>
             {idx < STEP_LABELS.length - 1 && (
-              <div className={`h-px w-4 sm:w-6 ${idx < step ? "bg-emerald-600" : "bg-slate-700"}`} />
+              <div className={`mx-2 h-0.5 flex-1 transition-colors duration-500 ${idx < step ? "bg-emerald-600" : "bg-slate-700"}`} />
             )}
           </div>
         );
@@ -53,7 +67,7 @@ function StepIndicator({ step }: { step: Step }) {
 }
 
 export function RegisterDocumentWizard() {
-  const { registerDocument, isPending, isSuccess, txHash } = useRegisterDocument();
+  const { registerDocument, isPending, isSuccess, txHash, isError } = useRegisterDocument();
 
   const [step, setStep] = useState<Step>(0);
 
@@ -66,7 +80,7 @@ export function RegisterDocumentWizard() {
   const [holderName, setHolderName] = useState("");
   const [holderId, setHolderId] = useState("");
   const [documentType, setDocumentType] = useState("");
-  const [sector, setSector] = useState(0);
+  const [sector, setSector] = useState("0");
   const [issuedAt, setIssuedAt] = useState("");
   const [expiresAt, setExpiresAt] = useState("");
 
@@ -82,7 +96,7 @@ export function RegisterDocumentWizard() {
     setHolderName("");
     setHolderId("");
     setDocumentType("");
-    setSector(0);
+    setSector("0");
     setIssuedAt("");
     setExpiresAt("");
     setCid("");
@@ -92,44 +106,82 @@ export function RegisterDocumentWizard() {
   // --- Step 0: File Upload ---
   if (step === 0) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-6 pt-2">
         <StepIndicator step={0} />
-        <p className="text-sm text-slate-400">Select the document file to register. A SHA-256 hash will be computed client-side.</p>
-        <label className="flex flex-col items-center justify-center w-full h-32 rounded-xl border-2 border-dashed border-slate-700 bg-slate-800/40 cursor-pointer hover:border-sky-600 transition-colors">
-          <Upload className="h-6 w-6 text-slate-500 mb-2" />
-          <span className="text-sm text-slate-400">{file ? file.name : "Click to select file"}</span>
-          <input
-            type="file"
-            className="hidden"
-            onChange={async (e) => {
-              const f = e.target.files?.[0] ?? null;
-              if (!f) return;
-              setFile(f);
-              setHashing(true);
-              const h = await computeDocumentHash(f);
-              setHash(h);
-              setHashing(false);
-            }}
-          />
-        </label>
-        {hashing && (
-          <div className="flex items-center gap-2 text-sm text-slate-400">
-            <Loader2 className="h-4 w-4 animate-spin" /> Computing hash…
+        <div className="space-y-4">
+          <div className="text-center">
+            <h2 className="text-xl font-bold text-slate-100">Upload Document</h2>
+            <p className="text-sm text-slate-400 mt-1">We'll compute a cryptographic hash of your file locally.</p>
           </div>
-        )}
-        {hash && (
-          <div className="rounded-md bg-slate-800/60 px-3 py-2">
-            <p className="text-xs text-slate-500 mb-1">SHA-256 Hash</p>
-            <p className="font-mono text-xs text-sky-300 break-all">{hash}</p>
-          </div>
-        )}
-        <button
-          onClick={() => setStep(1)}
-          disabled={!hash || hashing}
-          className="w-full rounded-md bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          Next: Metadata →
-        </button>
+          
+          <label className={`flex flex-col items-center justify-center w-full min-h-[160px] rounded-2xl border-2 border-dashed transition-all cursor-pointer ${
+            hash 
+              ? "bg-sky-500/5 border-sky-500/30" 
+              : "bg-slate-800/40 border-slate-700 hover:border-sky-500/50 hover:bg-slate-800/60"
+          }`}>
+            {!hashing && !hash && (
+              <div className="flex flex-col items-center p-6">
+                <div className="h-12 w-12 rounded-full bg-slate-800 flex items-center justify-center mb-3">
+                  <Upload className="h-6 w-6 text-slate-400" />
+                </div>
+                <p className="text-sm font-medium text-slate-300">Select file to register</p>
+                <p className="text-xs text-slate-500 mt-1">PDF, DOCX, or Image (max 10MB)</p>
+              </div>
+            )}
+            
+            {hashing && (
+              <div className="flex flex-col items-center p-6">
+                <Loader2 className="h-8 w-8 animate-spin text-sky-500 mb-2" />
+                <p className="text-sm text-slate-300">Computing local hash…</p>
+              </div>
+            )}
+            
+            {hash && !hashing && (
+              <div className="flex flex-col items-center p-6 text-center">
+                <div className="h-12 w-12 rounded-full bg-emerald-500/10 flex items-center justify-center mb-3">
+                  <CheckCircle2 className="h-6 w-6 text-emerald-500" />
+                </div>
+                <p className="text-sm font-semibold text-emerald-400">{file?.name}</p>
+                <div className="mt-4 px-3 py-1.5 rounded bg-slate-900 border border-slate-700 max-w-full">
+                  <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">SHA-256 Hash</p>
+                  <p className="font-mono text-[10px] text-sky-300 break-all">{hash}</p>
+                </div>
+                <Button variant="ghost" size="sm" className="mt-3 text-slate-500 hover:text-slate-300" onClick={(e) => {
+                  e.preventDefault();
+                  setHash(null);
+                  setFile(null);
+                }}>Change file</Button>
+              </div>
+            )}
+            
+            <input
+              type="file"
+              className="hidden"
+              onChange={async (e) => {
+                const f = e.target.files?.[0] ?? null;
+                if (!f) return;
+                setFile(f);
+                setHashing(true);
+                try {
+                  const h = await computeDocumentHash(f);
+                  setHash(h);
+                } catch (err) {
+                  console.error(err);
+                } finally {
+                  setHashing(false);
+                }
+              }}
+            />
+          </label>
+
+          <Button
+            onClick={() => setStep(1)}
+            disabled={!hash || hashing}
+            className="w-full bg-sky-600 hover:bg-sky-500 text-white h-11"
+          >
+            Next: Metadata <ChevronRight className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
       </div>
     );
   }
@@ -138,96 +190,119 @@ export function RegisterDocumentWizard() {
   if (step === 1) {
     const isValid = holderName && holderId && documentType && issuedAt;
     return (
-      <div className="space-y-4">
+      <div className="space-y-6 pt-2">
         <StepIndicator step={1} />
-        <div className="grid gap-3">
-          <div>
-            <label className="block text-xs text-slate-400 mb-1">Holder Name *</label>
-            <input
-              className="w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-slate-100 placeholder:text-slate-500 text-sm"
-              value={holderName}
-              onChange={(e) => setHolderName(e.target.value)}
-              placeholder="John Doe"
-            />
+        <div className="space-y-4">
+          <div className="text-center mb-2">
+            <h2 className="text-xl font-bold text-slate-100">Document Metadata</h2>
+            <p className="text-sm text-slate-400 mt-1">Provide details about the credential being issued.</p>
           </div>
-          <div>
-            <label className="block text-xs text-slate-400 mb-1">Holder ID *</label>
-            <input
-              className="w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-slate-100 placeholder:text-slate-500 text-sm"
-              value={holderId}
-              onChange={(e) => setHolderId(e.target.value)}
-              placeholder="ID-123456"
-            />
+
+          <div className="grid gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="holderName" className="text-slate-300">Holder Name <span className="text-sky-500">*</span></Label>
+              <Input
+                id="holderName"
+                value={holderName}
+                onChange={(e) => setHolderName(e.target.value)}
+                placeholder="e.g. John Doe"
+                className="bg-slate-800/50 border-slate-700"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="holderId" className="text-slate-300">Holder ID / Roll No <span className="text-sky-500">*</span></Label>
+                <Input
+                  id="holderId"
+                  value={holderId}
+                  onChange={(e) => setHolderId(e.target.value)}
+                  placeholder="e.g. ID-12345"
+                  className="bg-slate-800/50 border-slate-700"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="docType" className="text-slate-300">Document Type <span className="text-sky-500">*</span></Label>
+                <Input
+                  id="docType"
+                  value={documentType}
+                  onChange={(e) => setDocumentType(e.target.value)}
+                  placeholder="e.g. Degree Certificate"
+                  className="bg-slate-800/50 border-slate-700"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-slate-300">Sector <span className="text-sky-500">*</span></Label>
+              <Select value={sector} onValueChange={(val) => { if (val) setSector(val); }}>
+                <SelectTrigger className="bg-slate-800/50 border-slate-700">
+                  <SelectValue placeholder="Select sector" />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-800 border-slate-700">
+                  {SECTORS.map((s) => (
+                    <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="issuedAt" className="text-slate-300">Issue Date <span className="text-sky-500">*</span></Label>
+                <Input
+                  id="issuedAt"
+                  type="date"
+                  value={issuedAt}
+                  onChange={(e) => setIssuedAt(e.target.value)}
+                  className="bg-slate-800/50 border-slate-700"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="expiresAt" className="text-slate-300">Expiry Date</Label>
+                <Input
+                  id="expiresAt"
+                  type="date"
+                  value={expiresAt}
+                  onChange={(e) => setExpiresAt(e.target.value)}
+                  className="bg-slate-800/50 border-slate-700"
+                />
+              </div>
+            </div>
           </div>
-          <div>
-            <label className="block text-xs text-slate-400 mb-1">Document Type *</label>
-            <input
-              className="w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-slate-100 placeholder:text-slate-500 text-sm"
-              value={documentType}
-              onChange={(e) => setDocumentType(e.target.value)}
-              placeholder="Degree Certificate"
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-slate-400 mb-1">Sector *</label>
-            <select
-              className="w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-slate-100 text-sm"
-              value={sector}
-              onChange={(e) => setSector(Number(e.target.value))}
+
+          <div className="flex gap-3 pt-2">
+            <Button variant="outline" onClick={() => setStep(0)} className="flex-1 border-slate-700 text-slate-300 hover:bg-slate-800">
+              <ChevronLeft className="mr-2 h-4 w-4" /> Back
+            </Button>
+            <Button
+              onClick={async () => {
+                if (!file) return;
+                setUploading(true);
+                setUploadError("");
+                try {
+                  const result = await uploadFileToIpfs(file);
+                  setCid(result.cid);
+                  setStep(2);
+                } catch (e: any) {
+                  setUploadError(e.message ?? "IPFS upload failed");
+                } finally {
+                  setUploading(false);
+                }
+              }}
+              disabled={!isValid || uploading}
+              className="flex-[2] bg-sky-600 hover:bg-sky-500 text-white"
             >
-              {SECTORS.map((s) => (
-                <option key={s.value} value={s.value}>{s.label}</option>
-              ))}
-            </select>
+              {uploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+              {uploading ? "Uploading to IPFS…" : "Upload & Review"}
+            </Button>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs text-slate-400 mb-1">Issue Date *</label>
-              <input
-                type="date"
-                className="w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-slate-100 text-sm"
-                value={issuedAt}
-                onChange={(e) => setIssuedAt(e.target.value)}
-              />
+          {uploadError && (
+            <div className="flex items-center gap-2 text-xs text-red-400 bg-red-400/10 p-2 rounded border border-red-400/20">
+              <AlertCircle className="h-3 w-3" /> {uploadError}
             </div>
-            <div>
-              <label className="block text-xs text-slate-400 mb-1">Expiry Date</label>
-              <input
-                type="date"
-                className="w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-slate-100 text-sm"
-                value={expiresAt}
-                onChange={(e) => setExpiresAt(e.target.value)}
-              />
-            </div>
-          </div>
+          )}
         </div>
-        <div className="flex gap-2">
-          <button onClick={() => setStep(0)} className="flex-1 rounded-md border border-slate-700 px-4 py-2 text-sm text-slate-300 hover:bg-slate-800">
-            ← Back
-          </button>
-          <button
-            onClick={async () => {
-              if (!file) return;
-              setUploading(true);
-              setUploadError("");
-              try {
-                const result = await uploadFileToIpfs(file);
-                setCid(result.cid);
-                setStep(2);
-              } catch (e: any) {
-                setUploadError(e.message ?? "IPFS upload failed");
-              } finally {
-                setUploading(false);
-              }
-            }}
-            disabled={!isValid || uploading}
-            className="flex-1 flex items-center justify-center gap-2 rounded-md bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            {uploading && <Loader2 className="h-4 w-4 animate-spin" />}
-            {uploading ? "Uploading…" : "Upload & Review →"}
-          </button>
-        </div>
-        {uploadError && <p className="text-sm text-red-400">{uploadError}</p>}
       </div>
     );
   }
@@ -236,40 +311,51 @@ export function RegisterDocumentWizard() {
   if (step === 2) {
     const sectorLabel = SECTORS.find((s) => s.value === sector)?.label ?? "Education";
     return (
-      <div className="space-y-4">
+      <div className="space-y-6 pt-2">
         <StepIndicator step={2} />
-        <p className="text-sm text-slate-400">Review all details before signing the transaction.</p>
-        <div className="rounded-xl border border-slate-700/50 bg-slate-800/40 divide-y divide-slate-700/50 text-sm">
-          {[
-            ["File", file?.name ?? "-"],
-            ["Holder Name", holderName],
-            ["Holder ID", holderId],
-            ["Document Type", documentType],
-            ["Sector", sectorLabel],
-            ["Issue Date", issuedAt],
-            ["Expiry Date", expiresAt || "None"],
-            ["IPFS CID", cid],
-          ].map(([label, value]) => (
-            <div key={label} className="flex justify-between px-3 py-2">
-              <span className="text-slate-400 flex-shrink-0 mr-4">{label}</span>
-              <span className="text-slate-100 text-right break-all font-mono text-xs">{value}</span>
-            </div>
-          ))}
-          <div className="px-3 py-2">
-            <span className="text-slate-400">Hash</span>
-            <p className="mt-1 font-mono text-xs text-sky-300 break-all">{hash}</p>
+        <div className="space-y-5">
+          <div className="text-center">
+            <h2 className="text-xl font-bold text-slate-100">Review Registration</h2>
+            <p className="text-sm text-slate-400 mt-1">Ensure all details are correct before committing to blockchain.</p>
           </div>
-        </div>
-        <div className="flex gap-2">
-          <button onClick={() => setStep(1)} className="flex-1 rounded-md border border-slate-700 px-4 py-2 text-sm text-slate-300 hover:bg-slate-800">
-            ← Back
-          </button>
-          <button
-            onClick={() => setStep(3)}
-            className="flex-1 rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
-          >
-            Confirm & Sign →
-          </button>
+
+          <Card className="bg-slate-800/30 border-slate-700/50 overflow-hidden">
+            <div className="divide-y divide-slate-700/50">
+              {[
+                { label: "Holder Name", value: holderName },
+                { label: "Holder ID", value: holderId },
+                { label: "Document Type", value: documentType },
+                { label: "Sector", value: sectorLabel },
+                { label: "Issue Date", value: issuedAt },
+                { label: "Expiry Date", value: expiresAt || "No Expiry", isDim: !expiresAt },
+                { label: "IPFS CID", value: cid, isMono: true },
+                { label: "File Hash", value: hash, isMono: true, isSpecial: true },
+              ].map((item) => (
+                <div key={item.label} className="flex flex-col sm:flex-row sm:justify-between px-4 py-3 gap-1">
+                  <span className="text-xs text-slate-500 uppercase tracking-wider">{item.label}</span>
+                  <span className={`text-sm break-all ${
+                    item.isSpecial ? "text-sky-400 font-mono text-xs" : 
+                    item.isMono ? "text-slate-300 font-mono text-xs" : 
+                    item.isDim ? "text-slate-500 italic" : "text-slate-100 font-medium"
+                  }`}>
+                    {item.value}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          <div className="flex gap-3">
+            <Button variant="outline" onClick={() => setStep(1)} className="flex-1 border-slate-700 text-slate-300">
+              <ChevronLeft className="mr-2 h-4 w-4" /> Edit
+            </Button>
+            <Button
+              onClick={() => setStep(3)}
+              className="flex-[2] bg-emerald-600 hover:bg-emerald-500 text-white font-bold"
+            >
+              Sign & Register <ChevronRight className="ml-2 h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -277,57 +363,87 @@ export function RegisterDocumentWizard() {
 
   // --- Step 3: Confirm / Signing ---
   return (
-    <div className="space-y-4">
+    <div className="space-y-6 pt-2">
       <StepIndicator step={3} />
       {!isSuccess ? (
-        <>
-          <p className="text-sm text-slate-400">
-            Your wallet will prompt you to sign the registration transaction on Polygon Amoy.
-          </p>
-          <button
-            onClick={async () => {
-              if (!hash) return;
-              const issuedAtTs = BigInt(Math.floor(new Date(issuedAt).getTime() / 1000));
-              const expiresAtTs = expiresAt ? BigInt(Math.floor(new Date(expiresAt).getTime() / 1000)) : 0n;
-              await registerDocument({ hash, cid, holderName, holderId, documentType, sector, issuedAt: issuedAtTs, expiresAt: expiresAtTs });
-            }}
-            disabled={isPending}
-            className="w-full flex items-center justify-center gap-2 rounded-md bg-emerald-600 px-4 py-3 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isPending && <Loader2 className="h-5 w-5 animate-spin" />}
-            {isPending ? "Waiting for confirmation…" : "Sign & Register on Blockchain"}
-          </button>
-          {!isPending && (
-            <button onClick={() => setStep(2)} className="w-full rounded-md border border-slate-700 px-4 py-2 text-sm text-slate-300 hover:bg-slate-800">
-              ← Back to Review
-            </button>
-          )}
-        </>
-      ) : (
-        <div className="space-y-4">
-          <div className="flex flex-col items-center gap-3 py-4">
-            <CheckCircle2 className="h-12 w-12 text-emerald-400" />
-            <p className="text-lg font-bold text-emerald-400">Registered Successfully!</p>
-            <p className="text-sm text-slate-400 text-center">Your document is now immutably recorded on the blockchain.</p>
+        <div className="space-y-6">
+          <div className="text-center py-4">
+            <div className="h-16 w-16 rounded-full bg-sky-500/10 border border-sky-500/20 flex items-center justify-center mx-auto mb-4">
+              <Zap className="h-8 w-8 text-sky-500 animate-pulse" />
+            </div>
+            <h2 className="text-xl font-bold text-slate-100">Ready to Sign</h2>
+            <p className="text-sm text-slate-400 mt-2 max-w-xs mx-auto">
+              Your wallet will prompt you to authorize the transaction on Polygon Amoy.
+            </p>
           </div>
-          {txHash && (
-            <a
-              href={`${EXPLORER_URL}/tx/${txHash}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 rounded-md bg-slate-800 px-4 py-2 text-sm text-sky-400 hover:text-sky-300 border border-slate-700"
+
+          <div className="space-y-3">
+            <Button
+              onClick={async () => {
+                if (!hash) return;
+                const issuedAtTs = BigInt(Math.floor(new Date(issuedAt).getTime() / 1000));
+                const expiresAtTs = expiresAt ? BigInt(Math.floor(new Date(expiresAt).getTime() / 1000)) : 0n;
+                await registerDocument({ 
+                  hash, 
+                  cid, 
+                  holderName, 
+                  holderId, 
+                  documentType, 
+                  sector: Number(sector), 
+                  issuedAt: issuedAtTs, 
+                  expiresAt: expiresAtTs 
+                });
+              }}
+              disabled={isPending}
+              className="w-full h-12 bg-emerald-600 hover:bg-emerald-500 text-white text-base font-bold shadow-lg shadow-emerald-500/20"
             >
-              View transaction on Polygonscan <ExternalLink className="h-4 w-4" />
-            </a>
+              {isPending ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <CheckCircle2 className="mr-2 h-5 w-5" />}
+              {isPending ? "Waiting for Wallet…" : "Confirm Registration"}
+            </Button>
+            
+            {!isPending && (
+              <Button variant="ghost" onClick={() => setStep(2)} className="w-full text-slate-500 hover:text-slate-300">
+                Cancel and Review
+              </Button>
+            )}
+          </div>
+
+          {isError && (
+            <div className="flex items-center gap-3 p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-sm text-red-400">
+              <AlertCircle className="h-5 w-5 flex-shrink-0" />
+              <p>The transaction was rejected or failed. Please check your wallet and try again.</p>
+            </div>
           )}
-          <button
-            onClick={reset}
-            className="w-full rounded-md border border-slate-700 px-4 py-2 text-sm text-slate-300 hover:bg-slate-800"
-          >
-            Register another document
-          </button>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          <div className="flex flex-col items-center gap-4 py-6 text-center">
+            <div className="h-20 w-20 rounded-full bg-emerald-500/20 flex items-center justify-center animate-in zoom-in duration-500">
+              <CheckCircle2 className="h-10 w-10 text-emerald-500" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-emerald-400">Registration Complete!</h2>
+              <p className="text-slate-400 mt-2 max-w-sm">
+                The document hash and metadata are now permanently stored on the Polygon blockchain.
+              </p>
+            </div>
+          </div>
+          
+          <div className="space-y-3">
+            {txHash && (
+              <Button variant="outline" className="w-full h-11 border-slate-700 bg-slate-800/50 hover:bg-slate-800 text-sky-400 p-0">
+                <a href={`${EXPLORER_URL}/tx/${txHash}`} target="_blank" rel="noopener noreferrer" className="flex h-full w-full items-center justify-center">
+                  View on Explorer <ExternalLink className="ml-2 h-4 w-4" />
+                </a>
+              </Button>
+            )}
+            <Button onClick={reset} className="w-full h-11 bg-slate-700 hover:bg-slate-600 text-white">
+              Issue Another Document
+            </Button>
+          </div>
         </div>
       )}
     </div>
   );
 }
+
