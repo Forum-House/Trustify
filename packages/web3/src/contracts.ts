@@ -10,7 +10,19 @@ export const contractAbis = {
   TrustifyRegistryAbi,
 } as const;
 
+// Helper to handle both old simple format ("address") and new nested format ({ address: "...", txHash: "..." })
+const getAddress = (
+  legacyProp: string,
+  newProp: string
+) => {
+  const contracts = deployment.contracts as any;
+  if (contracts[newProp] && typeof contracts[newProp] === "object") {
+    return contracts[newProp].address as `0x${string}`;
+  }
+  return contracts[legacyProp] as `0x${string}`;
+};
+
 export const contractAddresses = {
-  accessControl: deployment.contracts.accessControl as `0x${string}`,
-  registry: deployment.contracts.registry as `0x${string}`,
+  accessControl: getAddress("accessControl", "TrustifyAccessControl"),
+  registry: getAddress("registry", "TrustifyRegistry"),
 } as const;

@@ -10,14 +10,21 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@trustify/config": "workspace:*",
-    "react": "^19.2.0",
-    "viem": "^2.38.6",
-    "wagmi": "^2.18.1"
+    "@trustify/config": "workspace:*"
+  },
+  "peerDependencies": {
+    "@tanstack/react-query": ">=5.0.0",
+    "react": ">=18.0.0",
+    "viem": ">=2.0.0",
+    "wagmi": ">=2.0.0"
   },
   "devDependencies": {
+    "@tanstack/react-query": "5.100.9",
     "@types/node": "^24.9.1",
     "@types/react": "^19.2.2",
+    "react": "^19.2.0",
+    "viem": "^2.38.6",
+    "wagmi": "^2.18.1",
     "typescript": "^5.8.2"
   }
 }
