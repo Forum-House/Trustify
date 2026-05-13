@@ -2,6 +2,7 @@
   "name": "@trustify/contracts",
   "private": true,
   "version": "0.1.0",
+  "type": "commonjs",
   "scripts": {
     "build": "hardhat compile",
     "test": "hardhat test",
@@ -21,7 +22,11 @@
     "@openzeppelin/contracts": "^5.1.0",
     "dotenv": "16.4.5",
     "hardhat": "2.26.3",
+    "jiti": "^2.7.0",
     "tsx": "4.19.2",
     "typescript": "5.8.2"
+  },
+  "dependencies": {
+    "@trustify/config": "workspace:*"
   }
 }
