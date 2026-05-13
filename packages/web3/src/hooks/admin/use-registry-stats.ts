@@ -1,15 +1,12 @@
-import { useReadContract } from "wagmi";
-import { contractAbis, contractAddresses } from "../../contracts";
+import { createPublicViemClient } from "../../client";
 
 export function useRegistryStats() {
-  const totalDocumentsQuery = useReadContract({
-    address: contractAddresses.registry,
-    abi: contractAbis.TrustifyRegistryAbi,
-    functionName: "totalDocuments",
-  });
-
+  // Note: The deployed TrustifyRegistry contract does not expose a totalDocuments()
+  // function. Stats are derived from on-chain events via getActivityEvents().
+  // This hook returns a stub until Phase 4 adds the counter to the contract.
   return {
-    totalDocuments: totalDocumentsQuery.data ?? 0n,
-    ...totalDocumentsQuery,
+    totalDocuments: undefined as bigint | undefined,
+    isLoading: false,
+    isError: false,
   };
 }
