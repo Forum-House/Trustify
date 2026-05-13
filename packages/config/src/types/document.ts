@@ -15,11 +15,12 @@ export interface DocumentRecord {
   holderId: string;
   documentType: string;
   sector: DocumentSector;
-  issuedAt: bigint;
-  expiresAt: bigint;
-  registeredAt: bigint;
+  issuedAt: bigint | number;
+  expiresAt: bigint | number;
+  registeredAt: bigint | number;
   status: DocumentStatus;
-  revocationReason: string;
-  supersededByHash: `0x${string}`;
+  revokedAt?: bigint | number;
+  revocationReason?: string;
+  supersededByHash?: `0x${string}`;
   txHash?: `0x${string}`;
 }

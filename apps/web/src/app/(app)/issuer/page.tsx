@@ -6,7 +6,7 @@ import { IssuerDocumentsTable } from "../../../components/issuer/issuer-document
 import { RevokeDocumentForm } from "../../../components/issuer/revoke-document-form";
 import { SupersedeDocumentForm } from "../../../components/issuer/supersede-document-form";
 import { useIssuerFullDocuments } from "@trustify/web3";
-import { ShieldCheck, FilePlus, History, Settings2, Loader2, AlertCircle } from "lucide-react";
+import { ShieldCheck, FilePlus, History, Settings2, Loader2, AlertCircle, RefreshCw } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../components/ui/tabs";
 
 function IssuerDocumentsSection() {
