@@ -4,7 +4,10 @@ import { useState, useEffect } from "react";
 import type { IssuerProfile } from "@trustify/config";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { useAllIssuers } from "@trustify/web3";
+import { useAllIssuers, useRevokeIssuer } from "@trustify/web3";
+import { Button } from "@/components/ui/button";
+import { Loader2, UserX } from "lucide-react";
+import { toast } from "sonner";
 
 const STATUS_VARIANT: Record<string, "default" | "destructive" | "secondary" | "outline"> = {
   approved: "default",
@@ -20,12 +23,38 @@ export function IssuersTable({ issuers: initialIssuers }: { issuers?: IssuerProf
   const [issuers, setIssuers] = useState<IssuerProfile[]>(initialIssuers ?? []);
   const [loading, setLoading] = useState(!initialIssuers);
 
+  const { revokeIssuer } = useRevokeIssuer();
+  const [revoking, setRevoking] = useState<string | null>(null);
+
+  const refresh = async () => {
+    setLoading(true);
+    try {
+      const data = await loadIssuers();
+      setIssuers(data);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (initialIssuers) return;
-    loadIssuers()
-      .then(setIssuers)
-      .finally(() => setLoading(false));
+    refresh();
   }, [initialIssuers, loadIssuers]);
+
+  const handleRevoke = async (wallet: `0x${string}`) => {
+    if (!confirm("Are you sure you want to revoke this issuer? They will no longer be able to register new documents.")) return;
+
+    setRevoking(wallet);
+    try {
+      await revokeIssuer(wallet);
+      toast.success("Issuer revoked successfully");
+      await refresh();
+    } catch (e) {
+      toast.error("Failed to revoke issuer");
+    } finally {
+      setRevoking(null);
+    }
+  };
 
   if (loading) {
     return (
@@ -47,6 +76,7 @@ export function IssuersTable({ issuers: initialIssuers }: { issuers?: IssuerProf
               <TableHead className="text-slate-400">Name</TableHead>
               <TableHead className="text-slate-400">Sector</TableHead>
               <TableHead className="text-slate-400">Status</TableHead>
+              <TableHead className="text-slate-400 text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -68,6 +98,23 @@ export function IssuersTable({ issuers: initialIssuers }: { issuers?: IssuerProf
                     <Badge variant={STATUS_VARIANT[issuer.status] ?? "secondary"} className="capitalize">
                       {issuer.status}
                     </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {issuer.status === "approved" && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleRevoke(issuer.walletAddress)}
+                        disabled={!!revoking}
+                        className="text-red-400 hover:text-red-300 hover:bg-red-400/10 h-8 px-2"
+                      >
+                        {revoking === issuer.walletAddress ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <><UserX className="h-4 w-4 mr-1" /> Revoke</>
+                        )}
+                      </Button>
+                    )}
                   </TableCell>
                 </TableRow>
               ))

@@ -1,11 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import { CheckCircle2, ExternalLink, Loader2, Upload, FileText, Eye, Zap, AlertCircle, ChevronRight, ChevronLeft } from "lucide-react";
 import { computeDocumentHash } from "../../hooks/use-document-hash";
 import { uploadFileToIpfs } from "../../lib/pinata";
 import { useRegisterDocument } from "@trustify/web3";
 import { EXPLORER_URL } from "../../lib/constants";
+import { SECTOR_OPTIONS } from "@trustify/config";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,21 +21,25 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 
-const SECTORS = [
-  { value: "0", label: "Education" },
-  { value: "1", label: "Healthcare" },
-  { value: "2", label: "Legal" },
-  { value: "3", label: "Government" },
-  { value: "4", label: "Corporate" },
-];
+// --- Schema Definitions ---
+const registerSchema = z.object({
+  holderName: z.string().min(2, "Name must be at least 2 characters"),
+  holderId: z.string().min(1, "Holder ID is required"),
+  documentType: z.string().min(1, "Document type is required"),
+  sector: z.string().min(1, "Sector is required"),
+  issuedAt: z.string().min(1, "Issue date is required"),
+  expiresAt: z.string().optional(),
+});
+
+type RegisterFormData = z.infer<typeof registerSchema>;
 
 const STEP_LABELS = ["Upload", "Metadata", "Review", "Confirm"] as const;
 const STEP_ICONS = [Upload, FileText, Eye, Zap];
 
 type Step = 0 | 1 | 2 | 3;
 
+// --- Components ---
 function StepIndicator({ step }: { step: Step }) {
   return (
     <div className="flex items-center justify-between mb-8 px-2">
@@ -68,39 +76,64 @@ function StepIndicator({ step }: { step: Step }) {
 
 export function RegisterDocumentWizard() {
   const { registerDocument, isPending, isSuccess, txHash, isError } = useRegisterDocument();
-
+  
   const [step, setStep] = useState<Step>(0);
-
-  // Step 0: Upload
   const [file, setFile] = useState<File | null>(null);
   const [hash, setHash] = useState<`0x${string}` | null>(null);
   const [hashing, setHashing] = useState(false);
-
-  // Step 1: Metadata
-  const [holderName, setHolderName] = useState("");
-  const [holderId, setHolderId] = useState("");
-  const [documentType, setDocumentType] = useState("");
-  const [sector, setSector] = useState("0");
-  const [issuedAt, setIssuedAt] = useState("");
-  const [expiresAt, setExpiresAt] = useState("");
-
-  // Step 2: Upload to IPFS
   const [cid, setCid] = useState("");
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
+
+  const form = useForm<RegisterFormData>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: {
+      holderName: "",
+      holderId: "",
+      documentType: "",
+      sector: "0",
+      issuedAt: "",
+      expiresAt: "",
+    }
+  });
 
   const reset = () => {
     setStep(0);
     setFile(null);
     setHash(null);
-    setHolderName("");
-    setHolderId("");
-    setDocumentType("");
-    setSector("0");
-    setIssuedAt("");
-    setExpiresAt("");
     setCid("");
     setUploadError("");
+    form.reset();
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0] ?? null;
+    if (!f) return;
+    setFile(f);
+    setHashing(true);
+    try {
+      const h = await computeDocumentHash(f);
+      setHash(h);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setHashing(false);
+    }
+  };
+
+  const onMetadataSubmit = async (data: RegisterFormData) => {
+    if (!file) return;
+    setUploading(true);
+    setUploadError("");
+    try {
+      const result = await uploadFileToIpfs(file);
+      setCid(result.cid);
+      setStep(2);
+    } catch (e: any) {
+      setUploadError(e.message ?? "IPFS upload failed");
+    } finally {
+      setUploading(false);
+    }
   };
 
   // --- Step 0: File Upload ---
@@ -125,7 +158,7 @@ export function RegisterDocumentWizard() {
                   <Upload className="h-6 w-6 text-slate-400" />
                 </div>
                 <p className="text-sm font-medium text-slate-300">Select file to register</p>
-                <p className="text-xs text-slate-500 mt-1">PDF, DOCX, or Image (max 10MB)</p>
+                <p className="text-xs text-slate-500 mt-1">PDF, DOCX, or Image (max 5MB)</p>
               </div>
             )}
             
@@ -154,24 +187,7 @@ export function RegisterDocumentWizard() {
               </div>
             )}
             
-            <input
-              type="file"
-              className="hidden"
-              onChange={async (e) => {
-                const f = e.target.files?.[0] ?? null;
-                if (!f) return;
-                setFile(f);
-                setHashing(true);
-                try {
-                  const h = await computeDocumentHash(f);
-                  setHash(h);
-                } catch (err) {
-                  console.error(err);
-                } finally {
-                  setHashing(false);
-                }
-              }}
-            />
+            <input type="file" className="hidden" onChange={handleFileUpload} />
           </label>
 
           <Button
@@ -188,11 +204,10 @@ export function RegisterDocumentWizard() {
 
   // --- Step 1: Metadata ---
   if (step === 1) {
-    const isValid = holderName && holderId && documentType && issuedAt;
     return (
       <div className="space-y-6 pt-2">
         <StepIndicator step={1} />
-        <div className="space-y-4">
+        <form onSubmit={form.handleSubmit(onMetadataSubmit)} className="space-y-4">
           <div className="text-center mb-2">
             <h2 className="text-xl font-bold text-slate-100">Document Metadata</h2>
             <p className="text-sm text-slate-400 mt-1">Provide details about the credential being issued.</p>
@@ -202,45 +217,40 @@ export function RegisterDocumentWizard() {
             <div className="space-y-2">
               <Label htmlFor="holderName" className="text-slate-300">Holder Name <span className="text-sky-500">*</span></Label>
               <Input
-                id="holderName"
-                value={holderName}
-                onChange={(e) => setHolderName(e.target.value)}
+                {...form.register("holderName")}
                 placeholder="e.g. John Doe"
-                className="bg-slate-800/50 border-slate-700"
+                className={`bg-slate-800/50 border-slate-700 ${form.formState.errors.holderName ? "border-red-500" : ""}`}
               />
+              {form.formState.errors.holderName && <p className="text-xs text-red-400">{form.formState.errors.holderName.message}</p>}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="holderId" className="text-slate-300">Holder ID / Roll No <span className="text-sky-500">*</span></Label>
                 <Input
-                  id="holderId"
-                  value={holderId}
-                  onChange={(e) => setHolderId(e.target.value)}
+                  {...form.register("holderId")}
                   placeholder="e.g. ID-12345"
-                  className="bg-slate-800/50 border-slate-700"
+                  className={`bg-slate-800/50 border-slate-700 ${form.formState.errors.holderId ? "border-red-500" : ""}`}
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="docType" className="text-slate-300">Document Type <span className="text-sky-500">*</span></Label>
                 <Input
-                  id="docType"
-                  value={documentType}
-                  onChange={(e) => setDocumentType(e.target.value)}
+                  {...form.register("documentType")}
                   placeholder="e.g. Degree Certificate"
-                  className="bg-slate-800/50 border-slate-700"
+                  className={`bg-slate-800/50 border-slate-700 ${form.formState.errors.documentType ? "border-red-500" : ""}`}
                 />
               </div>
             </div>
 
             <div className="space-y-2">
               <Label className="text-slate-300">Sector <span className="text-sky-500">*</span></Label>
-              <Select value={sector} onValueChange={(val) => { if (val) setSector(val); }}>
+              <Select value={form.watch("sector")} onValueChange={(val) => form.setValue("sector", val || "0")}>
                 <SelectTrigger className="bg-slate-800/50 border-slate-700">
                   <SelectValue placeholder="Select sector" />
                 </SelectTrigger>
                 <SelectContent className="bg-slate-800 border-slate-700">
-                  {SECTORS.map((s) => (
+                  {SECTOR_OPTIONS.map((s) => (
                     <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
                   ))}
                 </SelectContent>
@@ -251,20 +261,16 @@ export function RegisterDocumentWizard() {
               <div className="space-y-2">
                 <Label htmlFor="issuedAt" className="text-slate-300">Issue Date <span className="text-sky-500">*</span></Label>
                 <Input
-                  id="issuedAt"
+                  {...form.register("issuedAt")}
                   type="date"
-                  value={issuedAt}
-                  onChange={(e) => setIssuedAt(e.target.value)}
                   className="bg-slate-800/50 border-slate-700"
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="expiresAt" className="text-slate-300">Expiry Date</Label>
                 <Input
-                  id="expiresAt"
+                  {...form.register("expiresAt")}
                   type="date"
-                  value={expiresAt}
-                  onChange={(e) => setExpiresAt(e.target.value)}
                   className="bg-slate-800/50 border-slate-700"
                 />
               </div>
@@ -272,25 +278,12 @@ export function RegisterDocumentWizard() {
           </div>
 
           <div className="flex gap-3 pt-2">
-            <Button variant="outline" onClick={() => setStep(0)} className="flex-1 border-slate-700 text-slate-300 hover:bg-slate-800">
+            <Button variant="outline" type="button" onClick={() => setStep(0)} className="flex-1 border-slate-700 text-slate-300 hover:bg-slate-800">
               <ChevronLeft className="mr-2 h-4 w-4" /> Back
             </Button>
             <Button
-              onClick={async () => {
-                if (!file) return;
-                setUploading(true);
-                setUploadError("");
-                try {
-                  const result = await uploadFileToIpfs(file);
-                  setCid(result.cid);
-                  setStep(2);
-                } catch (e: any) {
-                  setUploadError(e.message ?? "IPFS upload failed");
-                } finally {
-                  setUploading(false);
-                }
-              }}
-              disabled={!isValid || uploading}
+              type="submit"
+              disabled={!form.formState.isValid || uploading}
               className="flex-[2] bg-sky-600 hover:bg-sky-500 text-white"
             >
               {uploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
@@ -302,14 +295,15 @@ export function RegisterDocumentWizard() {
               <AlertCircle className="h-3 w-3" /> {uploadError}
             </div>
           )}
-        </div>
+        </form>
       </div>
     );
   }
 
   // --- Step 2: Review ---
   if (step === 2) {
-    const sectorLabel = SECTORS.find((s) => s.value === sector)?.label ?? "Education";
+    const formData = form.getValues();
+    const sectorLabel = SECTOR_OPTIONS.find((s) => s.value === formData.sector)?.label ?? "Education";
     return (
       <div className="space-y-6 pt-2">
         <StepIndicator step={2} />
@@ -322,12 +316,12 @@ export function RegisterDocumentWizard() {
           <Card className="bg-slate-800/30 border-slate-700/50 overflow-hidden">
             <div className="divide-y divide-slate-700/50">
               {[
-                { label: "Holder Name", value: holderName },
-                { label: "Holder ID", value: holderId },
-                { label: "Document Type", value: documentType },
+                { label: "Holder Name", value: formData.holderName },
+                { label: "Holder ID", value: formData.holderId },
+                { label: "Document Type", value: formData.documentType },
                 { label: "Sector", value: sectorLabel },
-                { label: "Issue Date", value: issuedAt },
-                { label: "Expiry Date", value: expiresAt || "No Expiry", isDim: !expiresAt },
+                { label: "Issue Date", value: formData.issuedAt },
+                { label: "Expiry Date", value: formData.expiresAt || "No Expiry", isDim: !formData.expiresAt },
                 { label: "IPFS CID", value: cid, isMono: true },
                 { label: "File Hash", value: hash, isMono: true, isSpecial: true },
               ].map((item) => (
@@ -361,7 +355,7 @@ export function RegisterDocumentWizard() {
     );
   }
 
-  // --- Step 3: Confirm / Signing ---
+  // --- Step 3: Confirm ---
   return (
     <div className="space-y-6 pt-2">
       <StepIndicator step={3} />
@@ -381,15 +375,16 @@ export function RegisterDocumentWizard() {
             <Button
               onClick={async () => {
                 if (!hash) return;
-                const issuedAtTs = BigInt(Math.floor(new Date(issuedAt).getTime() / 1000));
-                const expiresAtTs = expiresAt ? BigInt(Math.floor(new Date(expiresAt).getTime() / 1000)) : 0n;
+                const data = form.getValues();
+                const issuedAtTs = BigInt(Math.floor(new Date(data.issuedAt).getTime() / 1000));
+                const expiresAtTs = data.expiresAt ? BigInt(Math.floor(new Date(data.expiresAt).getTime() / 1000)) : 0n;
                 await registerDocument({ 
                   hash, 
                   cid, 
-                  holderName, 
-                  holderId, 
-                  documentType, 
-                  sector: Number(sector), 
+                  holderName: data.holderName, 
+                  holderId: data.holderId, 
+                  documentType: data.documentType, 
+                  sector: Number(data.sector), 
                   issuedAt: issuedAtTs, 
                   expiresAt: expiresAtTs 
                 });
@@ -446,4 +441,3 @@ export function RegisterDocumentWizard() {
     </div>
   );
 }
-

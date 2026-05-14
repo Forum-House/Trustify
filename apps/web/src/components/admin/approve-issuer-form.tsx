@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import { ExternalLink, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
-import { useApproveIssuer, saveIssuerMetadata } from "@trustify/web3";
+import { useApproveIssuer } from "@trustify/web3";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,79 +16,71 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { EXPLORER_URL } from "../../lib/constants";
+import { SECTOR_OPTIONS } from "@trustify/config";
 
-const SECTORS = [
-  { value: "education", label: "Education" },
-  { value: "healthcare", label: "Healthcare" },
-  { value: "legal", label: "Legal" },
-  { value: "government", label: "Government" },
-  { value: "corporate", label: "Corporate" },
-];
+const approveSchema = z.object({
+  wallet: z.string().regex(/^0x[a-fA-F0-9]{40}$/, "Invalid Ethereum address"),
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  sector: z.string().min(1, "Sector is required"),
+});
+
+type ApproveFormData = z.infer<typeof approveSchema>;
 
 export function ApproveIssuerForm() {
   const { approveIssuer, isPending, isSuccess, isError, txHash } = useApproveIssuer();
-  const [wallet, setWallet] = useState("");
-  const [name, setName] = useState("");
-  const [sector, setSector] = useState("education");
+  
+  const form = useForm<ApproveFormData>({
+    resolver: zodResolver(approveSchema),
+    defaultValues: {
+      wallet: "",
+      name: "",
+      sector: "Education", // Default to string label for AccessControl
+    }
+  });
 
-  const isValid = 
-    wallet.startsWith("0x") && 
-    wallet.length === 42 && 
-    name.trim().length > 0;
-
-  const handleSubmit = async () => {
-    if (!isValid) return;
-    
-    // Call the on-chain approval
-    await approveIssuer(wallet as `0x${string}`);
-    
-    // Persist the metadata locally (as requested in P2.11/P2.13)
-    saveIssuerMetadata(wallet, name, sector);
-    
-    // Clear name/wallet (sector reset to default)
-    setWallet("");
-    setName("");
+  const onSubmit = async (data: ApproveFormData) => {
+    // Note: AccessControl expects a STRING for sector (e.g. "Education")
+    // Registry expects an ENUM index (e.g. 0)
+    await approveIssuer(data.wallet as `0x${string}`, data.name, data.sector);
+    form.reset({ wallet: "", name: "", sector: data.sector });
   };
 
   return (
-    <div className="space-y-5">
+    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
       <div className="space-y-2">
         <Label htmlFor="wallet" className="text-slate-300">Wallet Address</Label>
         <Input
-          id="wallet"
-          value={wallet}
-          onChange={(e) => setWallet(e.target.value)}
+          {...form.register("wallet")}
           placeholder="0x..."
           disabled={isPending}
-          className="bg-slate-800/50 border-slate-700 text-slate-100 placeholder:text-slate-500 focus-visible:ring-emerald-500/50"
+          className={`bg-slate-800/50 border-slate-700 text-slate-100 ${form.formState.errors.wallet ? "border-red-500" : ""}`}
         />
+        {form.formState.errors.wallet && <p className="text-xs text-red-400">{form.formState.errors.wallet.message}</p>}
       </div>
 
       <div className="space-y-2">
         <Label htmlFor="name" className="text-slate-300">Organization Name</Label>
         <Input
-          id="name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
+          {...form.register("name")}
           placeholder="e.g. Stanford University"
           disabled={isPending}
-          className="bg-slate-800/50 border-slate-700 text-slate-100 placeholder:text-slate-500 focus-visible:ring-emerald-500/50"
+          className={`bg-slate-800/50 border-slate-700 text-slate-100 ${form.formState.errors.name ? "border-red-500" : ""}`}
         />
       </div>
 
       <div className="space-y-2">
         <Label className="text-slate-300">Primary Sector</Label>
         <Select 
-          value={sector} 
-          onValueChange={(val) => { if (val) setSector(val); }}
+          value={form.watch("sector")} 
+          onValueChange={(val) => form.setValue("sector", val || "Education")}
           disabled={isPending}
         >
-          <SelectTrigger className="bg-slate-800/50 border-slate-700 text-slate-100 focus:ring-emerald-500/50">
+          <SelectTrigger className="bg-slate-800/50 border-slate-700 text-slate-100">
             <SelectValue placeholder="Select a sector" />
           </SelectTrigger>
           <SelectContent className="bg-slate-800 border-slate-700 text-slate-100">
-            {SECTORS.map((s) => (
-              <SelectItem key={s.value} value={s.value} className="focus:bg-slate-700 focus:text-white">
+            {SECTOR_OPTIONS.map((s) => (
+              <SelectItem key={s.label} value={s.label}>
                 {s.label}
               </SelectItem>
             ))}
@@ -96,9 +90,9 @@ export function ApproveIssuerForm() {
 
       <div className="flex justify-end pt-2">
         <Button
-          onClick={handleSubmit}
-          disabled={isPending || !isValid}
-          className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition-all active:scale-[0.98]"
+          type="submit"
+          disabled={isPending || !form.formState.isValid}
+          className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition-all"
         >
           {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {isPending ? "Confirming…" : "Approve Issuer"}
@@ -106,28 +100,16 @@ export function ApproveIssuerForm() {
       </div>
 
       {isSuccess && txHash && (
-        <div className="flex items-center gap-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-3 text-sm text-emerald-400 animate-in fade-in slide-in-from-top-2 duration-300">
+        <div className="flex items-center gap-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-3 text-sm text-emerald-400">
           <CheckCircle2 className="h-5 w-5 flex-shrink-0" />
           <div className="flex-1">
             <p className="font-medium">Issuer successfully approved!</p>
-            <a 
-              href={`${EXPLORER_URL}/tx/${txHash}`} 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              className="inline-flex items-center gap-1 mt-0.5 opacity-80 hover:opacity-100 underline decoration-emerald-500/30 underline-offset-2"
-            >
+            <a href={`${EXPLORER_URL}/tx/${txHash}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 mt-0.5 underline">
               View transaction <ExternalLink className="h-3 w-3" />
             </a>
           </div>
         </div>
       )}
-
-      {isError && (
-        <div className="flex items-center gap-3 rounded-lg bg-red-500/10 border border-red-500/20 p-3 text-sm text-red-400 animate-in fade-in slide-in-from-top-2">
-          <AlertCircle className="h-5 w-5 flex-shrink-0" />
-          <p>Transaction failed. Please check your wallet and try again.</p>
-        </div>
-      )}
-    </div>
+    </form>
   );
 }

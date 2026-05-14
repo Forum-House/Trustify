@@ -1,15 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ExternalLink, FileText, Trash2, RefreshCw, Loader2, ArrowUpRight } from "lucide-react";
+import { ExternalLink, FileText, Trash2, RefreshCw, Loader2, ArrowUpRight, ShieldCheck, UserX } from "lucide-react";
 import { getActivityEvents, type ActivityEvent } from "@trustify/web3";
 import { EXPLORER_URL } from "../../lib/constants";
 import { cn } from "@/lib/utils";
 
-const EVENT_CONFIG: Record<ActivityEvent["eventName"], { label: string; icon: typeof FileText; color: string; bg: string }> = {
-  DocumentRegistered: { label: "Registered", icon: FileText, color: "text-sky-400", bg: "bg-sky-500/10" },
-  DocumentRevoked: { label: "Revoked", icon: Trash2, color: "text-rose-400", bg: "bg-rose-500/10" },
-  DocumentSuperseded: { label: "Superseded", icon: RefreshCw, color: "text-amber-400", bg: "bg-amber-500/10" },
+const EVENT_CONFIG: Record<ActivityEvent["eventName"], { label: string; icon: typeof FileText; color: string; bg: string; entity: string }> = {
+  DocumentRegistered: { label: "Registered", icon: FileText, color: "text-sky-400", bg: "bg-sky-500/10", entity: "Document" },
+  DocumentRevoked: { label: "Revoked", icon: Trash2, color: "text-rose-400", bg: "bg-rose-500/10", entity: "Document" },
+  DocumentSuperseded: { label: "Superseded", icon: RefreshCw, color: "text-amber-400", bg: "bg-amber-500/10", entity: "Document" },
+  IssuerApproved: { label: "Approved", icon: ShieldCheck, color: "text-emerald-400", bg: "bg-emerald-500/10", entity: "Issuer" },
+  IssuerRevoked: { label: "Revoked", icon: UserX, color: "text-rose-500", bg: "bg-rose-500/10", entity: "Issuer" },
 };
 
 export function ActivityFeed() {
@@ -18,7 +20,7 @@ export function ActivityFeed() {
 
   useEffect(() => {
     getActivityEvents()
-      .then((e) => setEvents(e.slice().reverse())) // newest first
+      .then(setEvents) // getActivityEvents already sorts newest first
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
@@ -68,7 +70,7 @@ export function ActivityFeed() {
                 <div className="flex-1 min-w-0 pt-1">
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-sm font-semibold text-slate-100 truncate group-hover:text-white transition-colors">
-                      {config.label} <span className="text-slate-500 font-normal">Document</span>
+                      {config.label} <span className="text-slate-500 font-normal">{config.entity}</span>
                     </p>
                     <a
                       href={`${EXPLORER_URL}/tx/${event.txHash}`}
@@ -98,7 +100,7 @@ export function ActivityFeed() {
       
       {!loading && events.length > 0 && (
         <div className="mt-6 pt-4 border-t border-slate-800 flex justify-center">
-          <p className="text-[10px] text-slate-600 italic">Showing last 5000 blocks of activity</p>
+          <p className="text-[10px] text-slate-600 italic tracking-wider">Protocol Activity synchronized with blockchain</p>
         </div>
       )}
     </section>
