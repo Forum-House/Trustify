@@ -1,4 +1,6 @@
 import { PublicHeader } from "@/components/layout/public-header";
+
+export const dynamic = "force-dynamic";
 import { HeroSection } from "@/components/landing/hero-section";
 import { TrustStrip } from "@/components/landing/trust-strip";
 import { HowItWorks } from "@/components/landing/how-it-works";

@@ -1,11 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRegisterDocument, useVerifyDocument } from "@trustify/web3";
 import { computeDocumentHash } from "../../hooks/use-document-hash";
 import { uploadFileToIpfs } from "../../lib/pinata";
 
 export default function DemoPage() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const {
     registerDocument,
     isPending: isRegistering,
@@ -21,6 +24,8 @@ export default function DemoPage() {
   const [hash, setHash] = useState<`0x${string}` | null>(null);
   const [txHash, setTxHash] = useState<string>("");
   const [verifyResult, setVerifyResult] = useState<string>("");
+
+  if (!mounted) return null;
 
   return (
     <main

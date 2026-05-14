@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 
+export const dynamic = "force-dynamic";
+
 /**
  * App Layout - Base layout for authenticated routes
  * Role-specific layouts (admin, issuer, verifier) are handled separately
