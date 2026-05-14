@@ -10,7 +10,7 @@ export function useApproveIssuer() {
   const [error, setError] = useState<string | null>(null);
   const [txHash, setTxHash] = useState<`0x${string}` | null>(null);
 
-  const approveIssuer = useCallback(async (issuer: `0x${string}`) => {
+  const approveIssuer = useCallback(async (issuer: `0x${string}`, name: string, sector: string) => {
     setStatus("pending");
     setError(null);
     setTxHash(null);
@@ -19,7 +19,7 @@ export function useApproveIssuer() {
         address: contractAddresses.accessControl,
         abi: contractAbis.TrustifyAccessControlAbi,
         functionName: "approveIssuer",
-        args: [issuer],
+        args: [issuer, name, sector],
       });
       setTxHash(tx);
       setStatus("confirming");

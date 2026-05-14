@@ -1,6 +1,7 @@
 export * from "./types";
 export * from "./client";
 export * from "./contracts";
+export * from "./constants";
 
 export * from "./events/get-activity-events";
 
