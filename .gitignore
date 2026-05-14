@@ -39,3 +39,4 @@ typechain-types/
 # Local deployment dumps (keep folder, ignore local-only files)
 infra/deployments/localhost/*.json
 packages/contracts/deployments/localhost.json
+.vercel
