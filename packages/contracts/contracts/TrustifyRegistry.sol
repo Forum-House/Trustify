@@ -56,7 +56,7 @@ contract TrustifyRegistry is Pausable, ReentrancyGuard {
 
     mapping(bytes32 => DocumentRecord) private documents;
     mapping(address => bytes32[]) private issuerDocuments;
-
+    bytes32[] public allDocumentHashes;
     uint256 public totalDocuments;
 
     event DocumentRegistered(
@@ -147,6 +147,7 @@ contract TrustifyRegistry is Pausable, ReentrancyGuard {
 
         documents[hash] = record;
         issuerDocuments[msg.sender].push(hash);
+        allDocumentHashes.push(hash);
         totalDocuments += 1;
 
         emit DocumentRegistered(
@@ -164,13 +165,16 @@ contract TrustifyRegistry is Pausable, ReentrancyGuard {
 
     function revokeDocument(bytes32 hash, string calldata reason)
         external
-        onlyIssuer
         whenSystemActive
         nonReentrant
     {
         DocumentRecord storage record = documents[hash];
         if (record.status == DocumentStatus.NotFound) revert DocumentNotFound();
-        if (record.issuer != msg.sender) revert IssuerMismatch();
+        
+        bool isAdmin = accessControl.isAdmin(msg.sender);
+        bool isOriginalIssuer = record.issuer == msg.sender;
+        
+        if (!isAdmin && !isOriginalIssuer) revert Unauthorized();
         if (record.status != DocumentStatus.Active) revert InvalidDocumentStatus(record.status);
 
         record.status = DocumentStatus.Revoked;
@@ -257,6 +261,10 @@ contract TrustifyRegistry is Pausable, ReentrancyGuard {
 
     function getIssuerDocuments(address issuer) external view returns (bytes32[] memory) {
         return issuerDocuments[issuer];
+    }
+
+    function getAllDocumentHashes() external view returns (bytes32[] memory) {
+        return allDocumentHashes;
     }
 
     function pause() external onlyAdmin {
