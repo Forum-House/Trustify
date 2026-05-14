@@ -4,6 +4,9 @@ export async function uploadFileToIpfs(file: File) {
 
   const response = await fetch("/api/ipfs/upload", {
     method: "POST",
+    headers: {
+      "x-trustify-key": process.env.NEXT_PUBLIC_INTERNAL_API_KEY || "",
+    },
     body: formData,
   });
 
