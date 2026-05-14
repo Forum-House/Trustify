@@ -30,16 +30,43 @@ The core smart contract logic for the Trustify Protocol. Built with Solidity and
    ```
 2. Set your `DEPLOYER_PRIVATE_KEY` in the newly created `.env` file.
 
-### Commands
+### Deployment Commands
 ```bash
-# Compile contracts
-npx hardhat compile
-
-# Run unit tests
-npx hardhat test
-
-# Deploy to Polygon Amoy
+# Full automated deployment
 npx hardhat run scripts/deploy-all.ts --network amoy
+
+# Manual staged deployment
+npx hardhat run scripts/deploy-step-1-access-control.ts --network amoy
+npx hardhat run scripts/deploy-step-2-registry.ts --network amoy
+```
+
+### Administrative Scripts
+Manage the protocol directly from the CLI using these scripts.
+
+#### 1. Approve an Issuer
+Approves an organization to start issuing documents.
+```bash
+ISSUER_ADDRESS="0x..." ISSUER_NAME="Stanford" ISSUER_SECTOR="education" \
+npx hardhat run scripts/approve-issuer.ts --network amoy
+```
+
+#### 2. Add a Protocol Admin
+Adds a new administrator to the protocol.
+```bash
+ADMIN_ADDRESS="0x..." ROLE_TYPE="FULL" \
+npx hardhat run scripts/add-admin.ts --network amoy
+```
+
+#### 3. Verify Contracts
+Verifies the source code on Polygonscan (requires `POLYGONSCAN_API_KEY`).
+```bash
+npx hardhat run scripts/verify-contracts.ts --network amoy
+```
+
+#### 4. Export ABIs
+Syncs the latest contract ABIs to the `@trustify/config` package.
+```bash
+npx hardhat run scripts/export-abis.ts
 ```
 
 ### Deployment Flow
