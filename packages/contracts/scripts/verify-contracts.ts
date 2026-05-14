@@ -13,7 +13,7 @@ async function main() {
   console.log("Verifying TrustifyAccessControl...");
   try {
     await run("verify:verify", {
-      address: deployment.contracts.accessControl,
+      address: deployment.contracts.TrustifyAccessControl.address,
       constructorArguments: [deployment.deployer],
     });
   } catch (error: any) {
@@ -24,8 +24,8 @@ async function main() {
   console.log("\nVerifying TrustifyRegistry...");
   try {
     await run("verify:verify", {
-      address: deployment.contracts.registry,
-      constructorArguments: [deployment.contracts.accessControl],
+      address: deployment.contracts.TrustifyRegistry.address,
+      constructorArguments: [deployment.contracts.TrustifyAccessControl.address],
     });
   } catch (error: any) {
     console.error("Registry Verification Error:", error.message);

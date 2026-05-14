@@ -19,6 +19,9 @@ function getDeploymentFileName(networkName: string) {
 
 async function main() {
   const issuerAddress = process.env.ISSUER_ADDRESS;
+  const issuerName = process.env.ISSUER_NAME || "Default Org";
+  const issuerSector = process.env.ISSUER_SECTOR || "education";
+
   if (!issuerAddress || !ethers.isAddress(issuerAddress)) {
     throw new Error("Set a valid ISSUER_ADDRESS env var, e.g. ISSUER_ADDRESS=0xabc...");
   }
@@ -42,15 +45,15 @@ async function main() {
   }
 
   const accessControl = await ethers.getContractAt("TrustifyAccessControl", accessControlAddress);
-  const tx = await accessControl.approveIssuer(issuerAddress);
+  
+  console.log(`Approving ${issuerName} (${issuerSector}) at ${issuerAddress}...`);
+  const tx = await accessControl.approveIssuer(issuerAddress, issuerName, issuerSector);
   const receipt = await tx.wait();
+  
   const isIssuer = await accessControl.isIssuer(issuerAddress);
 
   console.log(`Network: ${network.name}`);
-  console.log(`AccessControl: ${accessControlAddress}`);
-  console.log(`Issuer: ${issuerAddress}`);
   console.log(`Tx Hash: ${tx.hash}`);
-  console.log(`Block: ${receipt?.blockNumber ?? "unknown"}`);
   console.log(`Approved: ${isIssuer}`);
 }
 
