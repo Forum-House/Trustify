@@ -1,11 +1,25 @@
 # @trustify/config
 
-Shared cross-workspace config and types.
+The central configuration and asset package for the Trustify Protocol. It ensures that ABIs, types, and constants are synchronized across the entire monorepo.
 
-## Contains
-- `src/types`: domain types (`Document`, `Issuer`, `Verification`, `Role`, `Activity`)
-- `src/constants`: routes, chains, sectors, contract constants
-- `src/abis`: typed ABI exports (`as const`) for Wagmi/Viem inference
+## 📦 Contents
 
-## Why ABIs Here
-`contracts/` generates raw ABI artifacts, while this package exposes stable, typed ABI imports for app/runtime usage.
+### 1. 📜 ABIs (`src/abis`)
+Contains the authoritative TypeScript ABI definitions for:
+- `TrustifyAccessControl`
+- `TrustifyRegistry`
+*These include the new state-driven getters (`getAllIssuers`, `getAllDocumentHashes`) added during the production hardening phase.*
+
+### 2. 🏗 Types (`src/types`)
+Centralized TypeScript interfaces for:
+- `DocumentRecord`
+- `IssuerProfile`
+- `VerificationResult`
+
+### 3. 🌐 Chains (`src/chains`)
+Wagmi/Viem chain configurations for Polygon Amoy and local development environments.
+
+---
+
+## 🚀 Why this package?
+By centralizing these assets, we prevent "desync" bugs where the frontend thinks a contract has a different interface than what is actually deployed. It serves as the single source of truth for the protocol's structure.
