@@ -3,11 +3,14 @@
   "chainId": 80002,
   "deployer": "0xf5eE552925D8b107fB0c82e69B8BBdf62F8C490e",
   "contracts": {
-    "accessControl": "0x28D7F78beA2485003EaccA821c6fC657bd7Ad962",
-    "registry": "0xFd34812b44D8133D30a7eD2318D70f7F276F233C"
-  },
-  "transactions": {
-    "registry": "0xad1684183562f0be334efadd67fae50f9bdaa11090b0aa835ecfcc699903c9ec"
+    "TrustifyAccessControl": {
+      "address": "0x862632FE73F3536fa0B4fF67a8d2dC19bc0b09D2",
+      "txHash": "0xedde9b03904a4bd1ef59ebe2e94919101e55b1c875f8b327a0d76237a5a3073e"
+    },
+    "TrustifyRegistry": {
+      "address": "0xA88d2E2cCAc7e52961124FCDe2b76f6F58f06a65",
+      "txHash": "0x85c5a5d8ee92052fbcd223977582f0a308436076640efc94c87abea8c0ae17c8"
+    }
   },
   "timestamp": "2026-05-12T08:32:32.089Z"
 }
