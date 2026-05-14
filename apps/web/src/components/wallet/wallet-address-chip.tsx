@@ -1,9 +1,8 @@
 "use client";
 
 import { useAccount, useDisconnect } from "wagmi";
-import { Copy, LogOut, ChevronDown, Check } from "lucide-react";
-import { useState } from "react";
-import { Button } from "../ui/button";
+import { Copy, LogOut, Check } from "lucide-react";
+import { useState, useEffect } from "react";
 import {
   Tooltip,
   TooltipContent,
@@ -12,11 +11,14 @@ import {
 } from "../ui/tooltip";
 
 export function WalletAddressChip() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const { address, isConnected } = useAccount();
   const { disconnect } = useDisconnect();
   const [copied, setCopied] = useState(false);
 
-  if (!isConnected || !address) return null;
+  if (!mounted || !isConnected || !address) return null;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(address);

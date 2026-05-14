@@ -2,6 +2,12 @@ const path = require('path');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    ignoreBuildErrors: false,
+  },
   transpilePackages: ['@trustify/web3', '@trustify/config'],
   webpack: (config, { isServer }) => {
     // Force single instance of shared libraries

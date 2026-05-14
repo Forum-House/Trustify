@@ -21,6 +21,7 @@ import { formatAddress, formatHash, formatTimestamp } from "../../lib/formatters
 import { EXPLORER_URL } from "../../lib/constants";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
+import { buttonVariants } from "../ui/button-variants";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -267,26 +268,24 @@ export function VerificationResultCard({ result, hash }: Props) {
 
               {/* External Links */}
               <div className="grid grid-cols-2 gap-3">
-                <Button 
-                  variant="outline" 
-                  className="bg-slate-900 border-slate-800 hover:bg-slate-800 hover:border-slate-700 h-10 p-0"
-                  asChild
+                <a 
+                  href={`${EXPLORER_URL}/address/${document.issuer}`} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className={cn(buttonVariants({ variant: "outline" }), "bg-slate-900 border-slate-800 hover:bg-slate-800 hover:border-slate-700 h-10 px-4")}
                 >
-                  <a href={`${EXPLORER_URL}/address/${document.issuer}`} target="_blank" rel="noopener noreferrer">
-                    <ShieldCheck className="h-4 w-4 mr-2 text-emerald-400" />
-                    Issuer Info
-                  </a>
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="bg-slate-900 border-slate-800 hover:bg-slate-800 hover:border-slate-700 h-10 p-0"
-                  asChild
+                  <ShieldCheck className="h-4 w-4 mr-2 text-emerald-400" />
+                  Issuer Info
+                </a>
+                <a 
+                  href={`https://gateway.pinata.cloud/ipfs/${document.cid}`} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className={cn(buttonVariants({ variant: "outline" }), "bg-slate-900 border-slate-800 hover:bg-slate-800 hover:border-slate-700 h-10 px-4")}
                 >
-                  <a href={`https://gateway.pinata.cloud/ipfs/${document.cid}`} target="_blank" rel="noopener noreferrer">
-                    <ExternalLink className="h-4 w-4 mr-2 text-sky-400" />
-                    Raw IPFS
-                  </a>
-                </Button>
+                  <ExternalLink className="h-4 w-4 mr-2 text-sky-400" />
+                  Raw IPFS
+                </a>
               </div>
             </div>
           </div>
@@ -334,12 +333,15 @@ export function VerificationResultCard({ result, hash }: Props) {
               Verify Another
             </Button>
             {document?.txHash && (
-              <Button className="bg-sky-600 hover:bg-sky-500 text-white font-bold px-6" asChild>
-                <a href={`${EXPLORER_URL}/tx/${document.txHash}`} target="_blank" rel="noopener noreferrer">
-                  <ExternalLink className="h-4 w-4 mr-2" />
-                  Blockchain Receipt
-                </a>
-              </Button>
+              <a 
+                href={`${EXPLORER_URL}/tx/${document.txHash}`} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className={cn(buttonVariants({ variant: "default" }), "bg-sky-600 hover:bg-sky-500 text-white font-bold px-6 h-9")}
+              >
+                <ExternalLink className="h-4 w-4 mr-2" />
+                Blockchain Receipt
+              </a>
             )}
           </div>
         </div>

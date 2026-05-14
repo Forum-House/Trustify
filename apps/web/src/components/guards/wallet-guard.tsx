@@ -1,12 +1,19 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { useAccount } from "wagmi";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { ConnectWalletButton } from "../wallet/connect-wallet-button";
 
 export function WalletGuard({ children }: { children: ReactNode }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const { isConnected } = useAccount();
+
+  if (!mounted) {
+    return null;
+  }
 
   if (!isConnected) {
     return (

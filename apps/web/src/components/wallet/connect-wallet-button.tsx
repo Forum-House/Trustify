@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useConnect, useAccount } from "wagmi";
 import { Button, buttonVariants } from "../ui/button";
 import { cn } from "@/lib/utils";
@@ -13,10 +14,13 @@ import {
 import { Wallet, Smartphone, Loader2 } from "lucide-react";
 
 export function ConnectWalletButton() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const { isConnected } = useAccount();
   const { connectors, connect, isPending } = useConnect();
 
-  if (isConnected) return null;
+  if (!mounted || isConnected) return null;
 
   return (
     <Dialog>
