@@ -6,11 +6,15 @@
     "target": "ES2020",
     "types": [
       "node",
-      "ethers"
-    ]
+      "mocha",
+      "chai",
+      "hardhat"
+    ],
+    "esModuleInterop": true,
+    "skipLibCheck": true
   },
   "include": [
-    "hardhat.config.ts",
+    "hardhat.config.cjs",
     "scripts/**/*.ts",
     "test/**/*.ts"
   ]

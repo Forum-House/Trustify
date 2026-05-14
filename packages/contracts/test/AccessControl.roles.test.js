@@ -1,5 +1,5 @@
-import { expect } from "chai";
-import { ethers } from "hardhat";
+const { expect } = require("chai");
+const { ethers } = require("hardhat");
 
 describe("TrustifyAccessControl", function () {
   it("deployer is admin", async function () {
@@ -17,7 +17,8 @@ describe("TrustifyAccessControl", function () {
     const ac = await F.deploy(admin.address);
     await ac.waitForDeployment();
 
-    await expect(ac.approveIssuer(issuer.address)).to.not.be.reverted;
+    // Updated to match new signature: (address, name, sector)
+    await expect(ac.approveIssuer(issuer.address, "Test Org", "education")).to.not.be.reverted;
     expect(await ac.isIssuer(issuer.address)).to.eq(true);
 
     await expect(ac.revokeIssuer(issuer.address)).to.not.be.reverted;
